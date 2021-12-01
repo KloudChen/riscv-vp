@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <memory>
 
 class MemoryDMI {
 	uint8_t *mem;
@@ -19,6 +20,11 @@ class MemoryDMI {
 	static MemoryDMI create_start_size_mapping(uint8_t *mem, uint64_t start, uint64_t size) {
 		assert(start + size > start);
 		return MemoryDMI(mem, start, size);
+	}
+
+	static shared_ptr<MemoryDMI> create_start_size_mapping2(uint8_t *mem, uint64_t start, uint64_t size) {
+		assert(start + size > start);
+		return std::make_shared<MemoryDMI>(mem, start, size);
 	}
 
 	uint8_t *get_raw_mem_ptr() {

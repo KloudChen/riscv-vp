@@ -62,7 +62,9 @@ class StrTransformer : public rocc_if, public sc_core::sc_module {
 	tlm_utils::tlm_quantumkeeper quantum_keeper;
 	TransAllocator<Transaction<RoccResp>> trans_allocator;
 
+#ifndef COSIM
 	SC_HAS_PROCESS(StrTransformer);
+#endif
 
 	StrTransformer(sc_core::sc_module_name name, io_fence_if& core)
 	    : sc_core::sc_module(name), peq("str_transformer_peq"), core(core) {
@@ -78,7 +80,10 @@ class StrTransformer : public rocc_if, public sc_core::sc_module {
 		tsocks[0].register_b_transport(this, &StrTransformer::transport_core);
 		// TODO: memory has no controller (sc_thread), no concurrent memory access from both CORE & ROCC
 		tsocks[1].register_b_transport(this, &StrTransformer::transport_mem);
+
+#ifndef COSIM
 		SC_THREAD(run);
+#endif
 	}
 
 	void init(GenericMemoryProxy<reg_t>* mem_proxy) {
@@ -129,14 +134,7 @@ class StrTransformer : public rocc_if, public sc_core::sc_module {
 						assert(buffer_index < num_buffers);
 						assert(local_index < 4);
 						assert(phases[buffer_index] <= TransPhase::CONFIG);
-						if (local_index == 0)
-							src_addr[buffer_index] = value;
-						else if (local_index == 1)
-							dst_addr[buffer_index] = value;
-						else if (local_index == 2)
-							str_size[buffer_index] = value;
-						else
-							buffer_func[buffer_index] = value;
+						*(reg_addrs[local_index] + buffer_index) = value;
 						phases[buffer_index] = TransPhase::CONFIG;
 						break;
 					}
@@ -258,14 +256,18 @@ class StrTransformer : public rocc_if, public sc_core::sc_module {
 
 	enum TransPhase { IDLE = 0, CONFIG, RUNNING } phases[num_buffers]{TransPhase::IDLE};
 
-	// register address map
-	// [0,  1,  2,  3]  -> [src_addr[0], dst_addr[0], str_size[0], buffer_func[0]]
-	// [10, 11, 12, 13] -> [src_addr[1], dst_addr[1], str_size[1], buffer_func[1]]
-	// ...
+	/** register address map:
+	/*	[00, 01, 02, 03] -> [src_addr[0], dst_addr[0], str_size[0], buffer_func[0]]
+	/* 	[10, 11, 12, 13] -> [src_addr[1], dst_addr[1], str_size[1], buffer_func[1]]
+	/* 	...
+	/* 	[n0, n1, n2, n3] -> [src_addr[n], dst_addr[n], str_size[n], buffer_func[n]]
+	**/
 	reg_t src_addr[num_buffers]{0};
 	reg_t dst_addr[num_buffers]{0};
 	reg_t str_size[num_buffers]{0};
 	reg_t buffer_func[num_buffers]{0};
+	std::array<reg_t*, 4> reg_addrs{src_addr, dst_addr, str_size, buffer_func};
+
 
 	char buffer[num_buffers][buffer_size];
 	std::array<sc_core::sc_time, num_funcs> instr_cycles;

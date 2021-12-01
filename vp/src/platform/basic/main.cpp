@@ -1,3 +1,9 @@
+#ifdef COSIM
+#include "main.h"
+#include "bridge.h"
+#include <memory>
+#endif
+
 #include <cstdlib>
 #include <ctime>
 
@@ -105,7 +111,147 @@ public:
 	}
 };
 
-int sc_main(int argc, char **argv) {
+
+#ifdef COSIM
+
+int vp_main(int argc, char **argv) {
+	BasicOptions opt;
+	opt.parse(argc, argv);
+
+	std::srand(std::time(nullptr));  // use current time as seed for random generator
+
+	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
+
+	auto core = std::make_shared<ISS>("", 0, opt.use_E_base_isa);
+	auto mem = std::make_shared<SimpleMemory>("SimpleMemory", opt.mem_size);
+	auto term = std::make_shared<SimpleTerminal>("SimpleTerminal")
+	auto loader = std::make_shared<ELFLoader>(opt.input_program.c_str());
+	auto bus = std::make_shared<SimpleBus<4, 13>>("SimpleBus");
+	auto iss_mem_if = std::make_shared<CombinedMemoryInterface>("MemoryInterface", *core);
+	auto sys = std::make_shared<SyscallHandler>("SyscallHandler");
+	auto plic = std::make_shared<FE310_PLIC<1, 64, 96, 32>>("PLIC");
+	auto clint = std::make_shared<CLINT<1>>("CLINT");
+	auto sensor = std::make_shared<SimpleSensor>("SimpleSensor", 2);
+	auto sensor2 = std::make_shared<SimpleSensor2>("SimpleSensor2", 5);
+	auto timer = std::make_shared<BasicTimer>("BasicTimer", 3);
+	auto mram = std::make_shared<SimpleMRAM>("SimpleMRAM", opt.mram_image, opt.mram_size)
+	auto dma = std::make_shared<SimpleDMA>("SimpleDMA", 4);
+	auto flashController = std::make_shared<Flashcontroller>("Flashcontroller", opt.flash_device);
+	auto ethernet = std::make_shared<EthernetDevice>("EthernetDevice", 7, mem->data, opt.network_device);
+	auto display = std::make_shared<Display>("Display");
+	auto dbg_if = std::make_shared<DebugMemoryInterface>("DebugMemoryInterface");
+	auto rocc = std::make_shared<StrTransformer>("StrTransformer", *core);
+	auto rocc_mem_if = std::make_shared<GenericMemoryProxy<reg_t>>("", rocc.quantum_keeper);
+
+	auto dmi = MemoryDMI::create_start_size_mapping2(mem->data, opt.mem_start_addr, mem->size);
+	auto instr_mem = std::make_shared<InstrMemoryProxy>(*dmi, *core);
+
+	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
+	iss_mem_if->bus_lock = bus_lock;
+	rocc_mem_if->bus_lock = bus_lock;
+
+	instr_memory_if *instr_mem_if = iss_mem_if.get();
+	data_memory_if *data_mem_if = iss_mem_if.get();
+	if (opt.use_instr_dmi)
+		instr_mem_if = instr_mem.get();
+	if (opt.use_data_dmi) {
+		iss_mem_if->dmi_ranges.emplace_back(*dmi);
+	}
+
+	uint64_t entry_point = loader->get_entrypoint();
+	if (opt.entry_point.available)
+		entry_point = opt.entry_point.value;
+
+	loader->load_executable_image(*mem, mem->size, opt.mem_start_addr);
+	core->init(instr_mem_if, data_mem_if, clint.get(), entry_point, rv32_align_address(opt.mem_end_addr), rocc.get());
+	rocc->init(rocc_mem_if.get());
+	sys->init(mem->data, opt.mem_start_addr, loader->get_heap_addr());
+	sys->register_core(core.get());
+
+	if (opt.intercept_syscalls)
+		core->sys = sys.get();
+
+	// address mapping
+	bus->ports[0] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr);
+	bus->ports[1] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
+	bus->ports[2] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
+	bus->ports[3] = new PortMapping(opt.term_start_addr, opt.term_end_addr);
+	bus->ports[4] = new PortMapping(opt.sensor_start_addr, opt.sensor_end_addr);
+	bus->ports[5] = new PortMapping(opt.dma_start_addr, opt.dma_end_addr);
+	bus->ports[6] = new PortMapping(opt.sensor2_start_addr, opt.sensor2_end_addr);
+	bus->ports[7] = new PortMapping(opt.mram_start_addr, opt.mram_end_addr);
+	bus->ports[8] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr);
+	bus->ports[9] = new PortMapping(opt.ethernet_start_addr, opt.ethernet_end_addr);
+	bus->ports[10] = new PortMapping(opt.display_start_addr, opt.display_end_addr);
+	bus->ports[11] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
+	bus->ports[12] = new PortMapping(opt.rocc_start_addr, opt.rocc_end_addr);
+
+	// connect TLM sockets
+	iss_mem_if->isock.bind(bus->tsocks[0]);
+	dbg_if->isock.bind(bus->tsocks[3]);
+
+	core->isock.bind(rocc->tsocks[0]);
+	rocc->isocks[0].bind(core->tsock);
+	rocc_mem_if->isock.bind(bus->tsocks[2]);
+
+	auto dma_connector = std::make_shared<PeripheralWriteConnector>("SimpleDMA-Connector");  // to respect ISS bus locking
+	dma_connector->isock.bind(bus->tsocks[1]);
+	dma->isock.bind(dma_connector->tsock);
+	dma_connector->bus_lock = bus_lock;
+
+	bus->isocks[0].bind(mem->tsock);
+	bus->isocks[1].bind(clint->tsock);
+	bus->isocks[2].bind(plic->tsock);
+	bus->isocks[3].bind(term->tsock);
+	bus->isocks[4].bind(sensor->tsock);
+	bus->isocks[5].bind(dma->tsock);
+	bus->isocks[6].bind(sensor2->tsock);
+	bus->isocks[7].bind(mram->tsock);
+	bus->isocks[8].bind(flashController->tsock);
+	bus->isocks[9].bind(ethernet->tsock);
+	bus->isocks[10].bind(display->tsock);
+	bus->isocks[11].bind(sys->tsock);
+	bus->isocks[12].bind(rocc->tsocks[1]);
+
+	// connect interrupt signals/communication
+	plic->target_harts[0] = core.get();
+	clint->target_harts[0] = core.get();
+	sensor->plic = plic.get();
+	dma->plic = plic.get();
+	timer->plic = plic.get();
+	sensor2->plic = plic.get();
+	ethernet->plic = plic.get();
+
+	// store the allocated instances in the bridge
+	auto bridge = cosim::Bridge::get();
+	bridge->core = core;
+	bridge->mem = mem;
+	bridge->loader = loader;
+	bridge->bus = bus;
+	bridge->iss_mem_if = iss_mem_if;
+	bridge->sys = sys;
+	bridge->plic = plic;
+	bridge->clint = clint;
+	bridge->sensor = sensor;
+	bridge->sensor2 = sensor2;
+	bridge->timer = timer;
+	bridge->mram = mram;
+	bridge->dma = dma;
+	bridge->flashController = flashController;
+	bridge->ethernet = ethernet;
+	bridge->display = display;
+	bridge->dbg_if = dbg_if;
+	bridge->rocc = rocc;
+	bridge->rocc_mem_if = rocc_mem_if;
+	bridge->dmi = dmi;
+	bridge->instr_mem = instr_mem;
+	bridge->bus_lock = bus_lock;
+	bridge->dma_connector = dma_connector;
+}
+
+#else
+
+int main(int argc, char **argv) {
 	BasicOptions opt;
 	opt.parse(argc, argv);
 
@@ -259,3 +405,4 @@ int sc_main(int argc, char **argv) {
 
 	return 0;
 }
+#endif
