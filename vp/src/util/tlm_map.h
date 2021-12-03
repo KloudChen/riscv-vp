@@ -22,6 +22,11 @@ struct access_mode {
 	bool allow_read = true;
 	bool allow_write = true;
 
+	access_mode() {}
+
+	access_mode(bool allow_read, bool allow_write) : 
+		allow_read(allow_read), allow_write(allow_write) {}
+		
 	static access_mode make_writeonly() {
 		return access_mode({false, true});
 	}
@@ -43,9 +48,9 @@ struct access_mode {
 	}
 };
 
-constexpr access_mode read_write = {true, true};
-constexpr access_mode read_only = {true, false};
-constexpr access_mode write_only = {false, true};
+const access_mode read_write = {true, true};
+const access_mode read_only  = {true, false};
+const access_mode write_only = {false, true};
 
 struct AbstractMapping {
 	virtual ~AbstractMapping() {}
@@ -70,6 +75,8 @@ struct AddressMapping : public AbstractMapping {
 	uint64_t end;
 	access_mode mode;
 	fn_transport_t handler;
+
+	AddressMapping() {}
 
 	template <typename Module, typename MemberFun>
 	AddressMapping &register_handler(Module *this_, MemberFun fn) {
@@ -109,6 +116,11 @@ struct reg_mapping_t {
 	access_mode mode = read_write;
 	uint32_t mask = 0xffffffff;
 
+	reg_mapping_t() {}
+
+	reg_mapping_t(uint64_t addr, uint32_t *vptr) : 
+		addr(addr), vptr(vptr) {}
+		
 	uint32_t value() {
 		return *vptr;
 	}

@@ -124,7 +124,7 @@ int vp_main(int argc, char **argv) {
 
 	auto core = std::make_shared<ISS>("", 0, opt.use_E_base_isa);
 	auto mem = std::make_shared<SimpleMemory>("SimpleMemory", opt.mem_size);
-	auto term = std::make_shared<SimpleTerminal>("SimpleTerminal")
+	auto term = std::make_shared<SimpleTerminal>("SimpleTerminal");
 	auto loader = std::make_shared<ELFLoader>(opt.input_program.c_str());
 	auto bus = std::make_shared<SimpleBus<4, 13>>("SimpleBus");
 	auto iss_mem_if = std::make_shared<CombinedMemoryInterface>("MemoryInterface", *core);
@@ -134,14 +134,14 @@ int vp_main(int argc, char **argv) {
 	auto sensor = std::make_shared<SimpleSensor>("SimpleSensor", 2);
 	auto sensor2 = std::make_shared<SimpleSensor2>("SimpleSensor2", 5);
 	auto timer = std::make_shared<BasicTimer>("BasicTimer", 3);
-	auto mram = std::make_shared<SimpleMRAM>("SimpleMRAM", opt.mram_image, opt.mram_size)
+	auto mram = std::make_shared<SimpleMRAM>("SimpleMRAM", opt.mram_image, opt.mram_size);
 	auto dma = std::make_shared<SimpleDMA>("SimpleDMA", 4);
 	auto flashController = std::make_shared<Flashcontroller>("Flashcontroller", opt.flash_device);
 	auto ethernet = std::make_shared<EthernetDevice>("EthernetDevice", 7, mem->data, opt.network_device);
 	auto display = std::make_shared<Display>("Display");
 	auto dbg_if = std::make_shared<DebugMemoryInterface>("DebugMemoryInterface");
 	auto rocc = std::make_shared<StrTransformer>("StrTransformer", *core);
-	auto rocc_mem_if = std::make_shared<GenericMemoryProxy<reg_t>>("", rocc.quantum_keeper);
+	auto rocc_mem_if = std::make_shared<GenericMemoryProxy<reg_t>>("", rocc->quantum_keeper);
 
 	auto dmi = MemoryDMI::create_start_size_mapping2(mem->data, opt.mem_start_addr, mem->size);
 	auto instr_mem = std::make_shared<InstrMemoryProxy>(*dmi, *core);
@@ -223,7 +223,7 @@ int vp_main(int argc, char **argv) {
 	ethernet->plic = plic.get();
 
 	// store the allocated instances in the bridge
-	auto bridge = cosim::Bridge::get();
+	auto bridge = cosim::Bridge::Get();
 	bridge->core = core;
 	bridge->mem = mem;
 	bridge->loader = loader;
@@ -247,6 +247,7 @@ int vp_main(int argc, char **argv) {
 	bridge->instr_mem = instr_mem;
 	bridge->bus_lock = bus_lock;
 	bridge->dma_connector = dma_connector;
+	return 0;
 }
 
 #else

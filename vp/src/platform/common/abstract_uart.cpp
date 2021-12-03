@@ -10,6 +10,8 @@
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <vector>
+#include "util/tlm_map.h"
 
 #define stop_fd (stop_pipe[0])
 #define newpollfd(FD) \
@@ -39,16 +41,16 @@ AbstractUART::AbstractUART(sc_core::sc_module_name, uint32_t irqsrc) {
 	irq = irqsrc;
 	tsock.register_b_transport(this, &AbstractUART::transport);
 
+	std::vector<vp::map::reg_mapping_t> reg_maps;
+	reg_maps.emplace_back(TXDATA_REG_ADDR, &txdata);
+	reg_maps.emplace_back(RXDATA_REG_ADDR, &rxdata),
+	reg_maps.emplace_back(TXCTRL_REG_ADDR, &txctrl);
+	reg_maps.emplace_back(RXCTRL_REG_ADDR, &rxctrl);
+	reg_maps.emplace_back(IE_REG_ADDR, &ie);
+	reg_maps.emplace_back(IP_REG_ADDR, &ip);
+	reg_maps.emplace_back(DIV_REG_ADDR, &div);
 	router
-	    .add_register_bank({
-		{TXDATA_REG_ADDR, &txdata},
-		{RXDATA_REG_ADDR, &rxdata},
-		{TXCTRL_REG_ADDR, &txctrl},
-		{RXCTRL_REG_ADDR, &rxctrl},
-		{IE_REG_ADDR, &ie},
-		{IP_REG_ADDR, &ip},
-		{DIV_REG_ADDR, &div},
-	    })
+	    .add_register_bank(reg_maps)
 	    .register_handler(this, &AbstractUART::register_access_callback);
 
 	stop = false;

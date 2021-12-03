@@ -9,9 +9,9 @@ class MemoryDMI {
 	uint64_t size;
 	uint64_t end;
 
+  public:
 	MemoryDMI(uint8_t *mem, uint64_t start, uint64_t size) : mem(mem), start(start), size(size), end(start + size) {}
 
-   public:
 	static MemoryDMI create_start_end_mapping(uint8_t *mem, uint64_t start, uint64_t end) {
 		assert(end > start);
 		return create_start_size_mapping(mem, start, end - start);
@@ -22,7 +22,7 @@ class MemoryDMI {
 		return MemoryDMI(mem, start, size);
 	}
 
-	static shared_ptr<MemoryDMI> create_start_size_mapping2(uint8_t *mem, uint64_t start, uint64_t size) {
+	static std::shared_ptr<MemoryDMI> create_start_size_mapping2(uint8_t *mem, uint64_t start, uint64_t size) {
 		assert(start + size > start);
 		return std::make_shared<MemoryDMI>(mem, start, size);
 	}

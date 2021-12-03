@@ -1219,7 +1219,7 @@ void ISS::validate_csr_counter_read_access_rights(uint32_t addr) {
 uint32_t ISS::get_csr_value(uint32_t addr) {
 	validate_csr_counter_read_access_rights(addr);
 
-	auto read = [=](auto &x, uint32_t mask) { return x.reg & mask; };
+	auto read = [=](uint32_t &reg, uint32_t mask) { return reg & mask; };
 
 	using namespace csr;
 
@@ -1256,25 +1256,25 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 			return 0;
 
 		case MSTATUS_ADDR:
-			return read(csrs.mstatus, MSTATUS_MASK);
+			return read(csrs.mstatus.reg, MSTATUS_MASK);
 		case SSTATUS_ADDR:
-			return read(csrs.mstatus, SSTATUS_MASK);
+			return read(csrs.mstatus.reg, SSTATUS_MASK);
 		case USTATUS_ADDR:
-			return read(csrs.mstatus, USTATUS_MASK);
+			return read(csrs.mstatus.reg, USTATUS_MASK);
 
 		case MIP_ADDR:
-			return read(csrs.mip, MIP_READ_MASK);
+			return read(csrs.mip.reg, MIP_READ_MASK);
 		case SIP_ADDR:
-			return read(csrs.mip, SIP_MASK);
+			return read(csrs.mip.reg, SIP_MASK);
 		case UIP_ADDR:
-			return read(csrs.mip, UIP_MASK);
+			return read(csrs.mip.reg, UIP_MASK);
 
 		case MIE_ADDR:
-			return read(csrs.mie, MIE_MASK);
+			return read(csrs.mie.reg, MIE_MASK);
 		case SIE_ADDR:
-			return read(csrs.mie, SIE_MASK);
+			return read(csrs.mie.reg, SIE_MASK);
 		case UIE_ADDR:
-			return read(csrs.mie, UIE_MASK);
+			return read(csrs.mie.reg, UIE_MASK);
 
 		case SATP_ADDR:
 			if (csrs.mstatus.tvm)
@@ -1282,7 +1282,7 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 			break;
 
 		case FCSR_ADDR:
-			return read(csrs.fcsr, FCSR_MASK);
+			return read(csrs.fcsr.reg, FCSR_MASK);
 
 		case FFLAGS_ADDR:
 			return csrs.fcsr.fflags;
@@ -1310,7 +1310,7 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 }
 
 void ISS::set_csr_value(uint32_t addr, uint32_t value) {
-	auto write = [=](auto &x, uint32_t mask) { x.reg = (x.reg & ~mask) | (value & mask); };
+	auto write = [=](uint32_t reg, uint32_t mask) { reg = (reg & ~mask) | (value & mask); };
 
 	using namespace csr;
 
@@ -1322,90 +1322,90 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
         case SATP_ADDR: {
             if (csrs.mstatus.tvm)
                 RAISE_ILLEGAL_INSTRUCTION();
-            write(csrs.satp, SATP_MASK);
+            write(csrs.satp.reg, SATP_MASK);
             // std::cout << "[iss] satp=" << boost::format("%x") % csrs.satp.reg << std::endl;
         } break;
 
 		case MTVEC_ADDR:
-			write(csrs.mtvec, MTVEC_MASK);
+			write(csrs.mtvec.reg, MTVEC_MASK);
 			break;
 		case STVEC_ADDR:
-			write(csrs.stvec, MTVEC_MASK);
+			write(csrs.stvec.reg, MTVEC_MASK);
 			break;
 		case UTVEC_ADDR:
-			write(csrs.utvec, MTVEC_MASK);
+			write(csrs.utvec.reg, MTVEC_MASK);
 			break;
 
 		case MEPC_ADDR:
-			write(csrs.mepc, pc_alignment_mask());
+			write(csrs.mepc.reg, pc_alignment_mask());
 			break;
 		case SEPC_ADDR:
-			write(csrs.sepc, pc_alignment_mask());
+			write(csrs.sepc.reg, pc_alignment_mask());
 			break;
 		case UEPC_ADDR:
-			write(csrs.uepc, pc_alignment_mask());
+			write(csrs.uepc.reg, pc_alignment_mask());
 			break;
 
 		case MSTATUS_ADDR:
-			write(csrs.mstatus, MSTATUS_MASK);
+			write(csrs.mstatus.reg, MSTATUS_MASK);
 			break;
 		case SSTATUS_ADDR:
-			write(csrs.mstatus, SSTATUS_MASK);
+			write(csrs.mstatus.reg, SSTATUS_MASK);
 			break;
 		case USTATUS_ADDR:
-			write(csrs.mstatus, USTATUS_MASK);
+			write(csrs.mstatus.reg, USTATUS_MASK);
 			break;
 
 		case MIP_ADDR:
-			write(csrs.mip, MIP_WRITE_MASK);
+			write(csrs.mip.reg, MIP_WRITE_MASK);
 			break;
 		case SIP_ADDR:
-			write(csrs.mip, SIP_MASK);
+			write(csrs.mip.reg, SIP_MASK);
 			break;
 		case UIP_ADDR:
-			write(csrs.mip, UIP_MASK);
+			write(csrs.mip.reg, UIP_MASK);
 			break;
 
 		case MIE_ADDR:
-			write(csrs.mie, MIE_MASK);
+			write(csrs.mie.reg, MIE_MASK);
 			break;
 		case SIE_ADDR:
-			write(csrs.mie, SIE_MASK);
+			write(csrs.mie.reg, SIE_MASK);
 			break;
 		case UIE_ADDR:
-			write(csrs.mie, UIE_MASK);
+			write(csrs.mie.reg, UIE_MASK);
 			break;
 
 		case MIDELEG_ADDR:
-			write(csrs.mideleg, MIDELEG_MASK);
+			write(csrs.mideleg.reg, MIDELEG_MASK);
 			break;
 
 		case MEDELEG_ADDR:
-			write(csrs.medeleg, MEDELEG_MASK);
+			write(csrs.medeleg.reg, MEDELEG_MASK);
 			break;
 
 		case SIDELEG_ADDR:
-			write(csrs.sideleg, SIDELEG_MASK);
+			write(csrs.sideleg.reg, SIDELEG_MASK);
 			break;
 
 		case SEDELEG_ADDR:
-			write(csrs.sedeleg, SEDELEG_MASK);
+			write(csrs.sedeleg.reg, SEDELEG_MASK);
 			break;
 
 		case MCOUNTEREN_ADDR:
-			write(csrs.mcounteren, MCOUNTEREN_MASK);
+			write(csrs.mcounteren.reg, MCOUNTEREN_MASK);
 			break;
 
 		case SCOUNTEREN_ADDR:
-			write(csrs.scounteren, MCOUNTEREN_MASK);
+			write(csrs.scounteren.reg, MCOUNTEREN_MASK);
 			break;
 
 		case MCOUNTINHIBIT_ADDR:
-			write(csrs.mcountinhibit, MCOUNTINHIBIT_MASK);
+			write(csrs.mcountinhibit.reg, MCOUNTINHIBIT_MASK);
 			break;
 
 		case FCSR_ADDR:
-			write(csrs.fcsr, FCSR_MASK);
+			write(csrs.fcsr.reg, FCSR_MASK);
 			break;
 
 		case FFLAGS_ADDR:

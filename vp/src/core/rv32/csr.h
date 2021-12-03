@@ -171,6 +171,10 @@ struct csr_mie {
 };
 
 struct csr_mip {
+	csr_mip() {}
+
+	csr_mip(uint32_t reg) : reg(reg) {}
+	
 	union {
 		uint32_t reg = 0;
 		struct {
