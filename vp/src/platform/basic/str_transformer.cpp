@@ -23,9 +23,11 @@ StrTransformer::StrTransformer(sc_core::sc_module_name name, io_fence_if& core)
 }
 
 void StrTransformer::run() {
+#ifndef COSIM
     for (int i = 0; i < num_buffers; i++) {
         sc_core::sc_spawn(sc_bind(&StrTransformer::transform, this, i));
     }
+#endif
 
     while (true) {
         sc_core::wait(peq.get_event());
