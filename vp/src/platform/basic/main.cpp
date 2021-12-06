@@ -226,6 +226,7 @@ int vp_main(int argc, char **argv) {
 	auto bridge = cosim::Bridge::Get();
 	bridge->core = core;
 	bridge->mem = mem;
+	bridge->term = term;
 	bridge->loader = loader;
 	bridge->bus = bus;
 	bridge->iss_mem_if = iss_mem_if;

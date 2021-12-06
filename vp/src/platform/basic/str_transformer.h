@@ -38,7 +38,7 @@
 #include <memory>
 #include <systemc>
 
-#include "allocator.h"
+#include "core/common/allocator.h"
 #include "core/common/io_fence_if.h"
 #include "core/common/rocc_if.h"
 #include "core/common/trap.h"
@@ -91,6 +91,8 @@ class StrTransformer : public rocc_if, public sc_core::sc_module {
 
 	void run();
 
+	void transform(int buffer_index);
+
    private:
 
     void to_lower(char* buffer, reg_t len);
@@ -101,7 +103,6 @@ class StrTransformer : public rocc_if, public sc_core::sc_module {
 
 	void store_data(int buffer_index);
 
-	void transform(int buffer_index);
 
    private:
 	static constexpr int num_buffers = 2;

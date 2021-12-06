@@ -8,12 +8,12 @@
 #include "core/common/debug.h"
 #include "core/common/io_fence_if.h"
 #include "core/common/rocc_if.h"
+#include "core/common/allocator.h"
 #include "csr.h"
 #include "fp.h"
 #include "mem_if.h"
 #include "syscall_if.h"
 #include "util/common.h"
-#include "allocator.h"
 
 #include <assert.h>
 #include <stdint.h>
