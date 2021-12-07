@@ -63,25 +63,18 @@ private:
 
 	tlm_utils::peq_with_get<tlm::tlm_generic_payload> peq;
 	io_fence_if& core;
+	tlm_utils::tlm_quantumkeeper quantum_keeper;
 	TransAllocator<Transaction<RoccResp>> trans_allocator;
 
 	StrTransformer(sc_core::sc_module_name name, io_fence_if& core);
 
-	void init(GenericMemoryProxy<reg_t>* mem_proxy) {
-        for (auto& pe : pes)
-		    pe->mem_if = mem_proxy;
-	}
+	void init(GenericMemoryProxy<reg_t>* mem_proxy);
 
     std::shared_ptr<PE> get_pe(int index) {
         return pes[index];
     }
 
-	bool is_busy() const override {
-		for (auto& pe : pes)
-			if (pe->is_busy())
-				return true;
-		return false;
-	}
+	bool is_busy() const override;
 
 	void transport_core(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay) {
 		auto addr = trans.get_address();
@@ -98,6 +91,8 @@ private:
 
     // Notify the riscv core when the accelerator is idle
     void monitor();
+
+	void pe_idle(int index);
 
    private:
 	static const sc_core::sc_time contr_cycle;

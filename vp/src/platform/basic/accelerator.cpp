@@ -21,7 +21,8 @@ StrTransformer::StrTransformer(sc_core::sc_module_name name, io_fence_if& core)
     tsocks[1].register_b_transport(this, &StrTransformer::transport_mem);
 
     for (int i = 0; i < num_buffers; i++) {
-        auto pe = std::make_shared<PE>(this);
+        auto pe = std::make_shared<PE>(i, this);
+        pes[i] = pe;
     }
 }
 
@@ -70,15 +71,27 @@ void StrTransformer::dispatch() {
 }
 
 void StrTransformer::monitor() {
-    sc_core::sc_event_and_list all_idle;
-    for (auto& pe : pes) {
-        all_idle &= pe->get_idle_event();
-    }
-
     while (true) {
-        wait(all_idle);
+        wait(idle_event);
         core.io_fence_done();
     }
 }
 
+void StrTransformer::pe_idle(int index) {
+    for (auto& pe : pes) {
+        if (pe->is_busy()) return;
+    }
+    idle_event.notify();
+}
 
+bool StrTransformer::is_busy() const {
+    for (auto& pe : pes)
+        if (pe->is_busy())
+            return true;
+    return false;
+}
+
+void StrTransformer::init(GenericMemoryProxy<reg_t>* mem_proxy) {
+    for (auto& pe : pes)
+        pe->mem_if = mem_proxy;
+}
