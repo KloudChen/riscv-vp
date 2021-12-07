@@ -36,7 +36,7 @@ else()
                 ethernet.cpp
                 display.cpp
                 main.cpp
-                str_transformer.cpp
+                accelerator.cpp
                 ${HEADERS})
 
         target_include_directories(platform-basic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

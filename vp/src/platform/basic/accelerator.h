@@ -1,10 +1,10 @@
 /**
- * @file str_transformer.h
+ * @file accelerator.h
  * @author cw (wei.c.chen@intel.com)
- * @brief
+ * @brief 
  * @version 0.1
- * @date 2021-11-23
- *
+ * @date 2021-12-07
+ * 
  * Copyright (C) 2020, Intel Corporation. All rights reserved.
  *
  * A string transformer as RoCC accelerator. It has two sets of resources for buffering.
@@ -37,6 +37,7 @@
 #include <array>
 #include <memory>
 #include <systemc>
+#include <functional>
 
 #include "core/common/allocator.h"
 #include "core/common/io_fence_if.h"
@@ -44,37 +45,40 @@
 #include "core/common/trap.h"
 #include "mem.h"
 
-using std::shared_ptr;
+#include "pe.h"
 
-#ifdef RV32B
-using rv32::GenericMemoryProxy;
-#else
-using rv64::GenericMemoryProxy;
-#endif
 
 class StrTransformer : public rocc_if, public sc_core::sc_module {
+private:
+	static constexpr int num_buffers = 2;
+
    public:
+    // initiator socket connected to bus (targeting memory) for memory transactions
 	std::array<tlm_utils::simple_initiator_socket<StrTransformer>, 1> isocks{};
-	GenericMemoryProxy<reg_t>* mem_if;
+    // target socket 0 connected to riscv core, for receiving rocc commands
+    // target socket 1 connected to bus (<==> memory), for receiving memory responses (NOT used)
 	std::array<tlm_utils::simple_target_socket<StrTransformer>, 2> tsocks{};
+    // PE agents for modules in cofluent
+    std::array<std::shared_ptr<PE>, num_buffers> pes;
+
 	tlm_utils::peq_with_get<tlm::tlm_generic_payload> peq;
 	io_fence_if& core;
-	tlm_utils::tlm_quantumkeeper quantum_keeper;
 	TransAllocator<Transaction<RoccResp>> trans_allocator;
-
-#ifndef COSIM
-	SC_HAS_PROCESS(StrTransformer);
-#endif
 
 	StrTransformer(sc_core::sc_module_name name, io_fence_if& core);
 
 	void init(GenericMemoryProxy<reg_t>* mem_proxy) {
-		mem_if = mem_proxy;
+        for (auto& pe : pes)
+		    pe->mem_if = mem_proxy;
 	}
 
+    std::shared_ptr<PE> get_pe(int index) {
+        return pes[index];
+    }
+
 	bool is_busy() const override {
-		for (auto& p : phases)
-			if (p == TransPhase::RUNNING)
+		for (auto& pe : pes)
+			if (pe->is_busy())
 				return true;
 		return false;
 	}
@@ -89,26 +93,15 @@ class StrTransformer : public rocc_if, public sc_core::sc_module {
 		assert(false);
 	}
 
-	void run();
+    // Receives the rocc command from riscv core, configure and notify the PEs
+	void dispatch();
 
-	void transform(int buffer_index);
-
-   private:
-
-	void load_data(int buffer_index);
-
-	void store_data(int buffer_index);
-
+    // Notify the riscv core when the accelerator is idle
+    void monitor();
 
    private:
-	static constexpr int num_buffers = 2;
-	static constexpr int num_funcs = 2;
-	static constexpr int buffer_size = 256;
 	static const sc_core::sc_time contr_cycle;
-
-	enum TransOp { TO_LOWWER = 0, TO_UPPER };
-
-	enum TransPhase { IDLE = 0, CONFIG, RUNNING } phases[num_buffers]{TransPhase::IDLE};
+    sc_core::sc_event idle_event;
 
 	/* register address map:
 		[00, 01, 02, 03] -> [src_addr[0], dst_addr[0], str_size[0], buffer_func[0]]
@@ -116,14 +109,9 @@ class StrTransformer : public rocc_if, public sc_core::sc_module {
 	 	...
 	 	[n0, n1, n2, n3] -> [src_addr[n], dst_addr[n], str_size[n], buffer_func[n]]
 	*/
-	reg_t src_addr[num_buffers]{0};
-	reg_t dst_addr[num_buffers]{0};
-	reg_t str_size[num_buffers]{0};
-	reg_t buffer_func[num_buffers]{0};
-	std::array<reg_t*, 4> reg_addrs{src_addr, dst_addr, str_size, buffer_func};
-
-
-	char buffer[num_buffers][buffer_size];
-	std::array<sc_core::sc_time, num_funcs> instr_cycles;
-	sc_core::sc_event run_event[num_buffers];
+	// reg_t src_addr[num_buffers]{0};
+	// reg_t dst_addr[num_buffers]{0};
+	// reg_t str_size[num_buffers]{0};
+	// reg_t buffer_func[num_buffers]{0};
+	// std::array<reg_t*, 4> reg_addrs{src_addr, dst_addr, str_size, buffer_func};
 };

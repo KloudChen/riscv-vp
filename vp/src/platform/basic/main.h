@@ -11,4 +11,4 @@
 
 #pragma once
 
-int vp_main(int argc, char **argv);
+int vp_initialize(int argc, char **argv);

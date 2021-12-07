@@ -25,7 +25,11 @@
 #include "syscall.h"
 #include "terminal.h"
 #include "dummy_rocc.h"
+#ifdef COSIM
+#include "accelerator.h"
+#else
 #include "str_transformer.h"
+#endif
 #include "util/options.h"
 #include "platform/common/options.h"
 #include "allocator.h"
@@ -114,7 +118,7 @@ public:
 
 #ifdef COSIM
 
-int vp_main(int argc, char **argv) {
+int vp_initialize(int argc, char **argv) {
 	BasicOptions opt;
 	opt.parse(argc, argv);
 

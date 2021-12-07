@@ -2,6 +2,28 @@
 
 const sc_core::sc_time StrTransformer::contr_cycle(10, sc_core::SC_NS);
 
+static void to_lower(char* const buffer, reg_t len) {
+    char* c = buffer;
+    static int inc = 'a' - 'A';
+    while (len > 0) {
+        if (*c >= 'A' && *c <= 'Z')
+            *c += inc;
+        c++;
+        len--;
+    }
+}
+
+static void to_upper(char* const buffer, reg_t len) {
+    char* c = buffer;
+    static int inc = 'a' - 'A';
+    while (len > 0) {
+        if (*c >= 'a' && *c <= 'z')
+            *c -= inc;
+        c++;
+        len--;
+    }
+}
+
 StrTransformer::StrTransformer(sc_core::sc_module_name name, io_fence_if& core)
     : sc_core::sc_module(name), peq("str_transformer_peq"), core(core) {
     for (int i = 0; i < num_buffers; i++) {
@@ -100,28 +122,6 @@ void StrTransformer::transform(int buffer_index) {
         if (!is_busy()) {
             core.io_fence_done();
         }
-    }
-}
-
-void StrTransformer::to_lower(char* buffer, reg_t len) {
-    char* c = buffer;
-    static int inc = 'a' - 'A';
-    while (len > 0) {
-        if (*c >= 'A' && *c <= 'Z')
-            *c += inc;
-        c++;
-        len--;
-    }
-}
-
-void StrTransformer::to_upper(char* buffer, reg_t len) {
-    char* c = buffer;
-    static int inc = 'a' - 'A';
-    while (len > 0) {
-        if (*c >= 'a' && *c <= 'z')
-            *c -= inc;
-        c++;
-        len--;
     }
 }
 
