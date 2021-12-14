@@ -38,14 +38,20 @@
 #include <memory>
 #include <systemc>
 #include <functional>
+#include <sstream>
 
 #include "core/common/allocator.h"
 #include "core/common/io_fence_if.h"
 #include "core/common/rocc_if.h"
 #include "core/common/trap.h"
 #include "mem.h"
+#include "cf_helper.h"
 
-#include "pe.h"
+#ifdef RV32B
+using rv32::GenericMemoryProxy;
+#else
+using rv64::GenericMemoryProxy;
+#endif
 
 
 class StrTransformer : public rocc_if, public sc_core::sc_module {
@@ -58,8 +64,7 @@ private:
     // target socket 0 connected to riscv core, for receiving rocc commands
     // target socket 1 connected to bus (<==> memory), for receiving memory responses (NOT used)
 	std::array<tlm_utils::simple_target_socket<StrTransformer>, 2> tsocks{};
-    // PE agents for modules in cofluent
-    std::array<std::shared_ptr<PE>, num_buffers> pes;
+    GenericMemoryProxy<reg_t>* mem_if;
 
 	tlm_utils::peq_with_get<tlm::tlm_generic_payload> peq;
 	io_fence_if& core;
@@ -68,20 +73,17 @@ private:
 	StrTransformer(sc_core::sc_module_name name, io_fence_if& core);
 
 	void init(GenericMemoryProxy<reg_t>* mem_proxy) {
-        for (auto& pe : pes)
-		    pe->mem_if = mem_proxy;
+        mem_if = mem_proxy;
 	}
 
-    std::shared_ptr<PE> get_pe(int index) {
-        return pes[index];
+    bool is_busy() const override {
+        for (int i = 0; i < num_buffers; i++) {
+            auto pe = get_pe(i);
+            if (!pe->is_busy())
+                return false;
+        }
+        return true;
     }
-
-	bool is_busy() const override {
-		for (auto& pe : pes)
-			if (pe->is_busy())
-				return true;
-		return false;
-	}
 
 	void transport_core(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay) {
 		auto addr = trans.get_address();
@@ -93,15 +95,8 @@ private:
 		assert(false);
 	}
 
-    // Receives the rocc command from riscv core, configure and notify the PEs
-	void dispatch();
-
-    // Notify the riscv core when the accelerator is idle
-    void monitor();
-
    private:
 	static const sc_core::sc_time contr_cycle;
-    sc_core::sc_event idle_event;
 
 	/* register address map:
 		[00, 01, 02, 03] -> [src_addr[0], dst_addr[0], str_size[0], buffer_func[0]]

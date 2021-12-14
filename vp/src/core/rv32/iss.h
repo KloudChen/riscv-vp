@@ -327,6 +327,15 @@ struct ISS : public sc_core::sc_module,
 		isock->b_transport(*trans, instr_cycles[rocc_instr.opcode()]);
 	}
 
+	inline void forward_rocc(Instruction &instr) {
+		auto cmd_monitor = get_cmd_monitor();
+		RoccInstruction rocc_instr(instr.data());
+		cmd_monitor->instr = rocc_instr;
+		cmd_monitor->rs1 = regs[rocc_instr.rs1()];
+		cmd_monitor->rs2 = regs[rocc_instr.rs2()];
+		cmd_monitor->new_cmd_event.notify();
+	}
+
 	inline void transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay) {
 		auto addr = trans.get_address();
 		assert(addr >= ROCC_START_ADDR && addr <= ROCC_END_ADDR);

@@ -1173,7 +1173,8 @@ void ISS::exec_step() {
 		case Opcode::CUSTOM1:
 		case Opcode::CUSTOM2:
 		case Opcode::CUSTOM3:
-			execute_rocc(instr);
+			// execute_rocc(instr);
+			forward_rocc(instr);
 			break;
 
         default:
