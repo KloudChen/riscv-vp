@@ -1,4 +1,5 @@
 #include "iss.h"
+#include "cf_helper.h"
 
 // to save *cout* format setting, see *ISS::show*
 #include <boost/io/ios_state.hpp>
@@ -1890,4 +1891,14 @@ void ISS::show() {
 	regs.show();
 	std::cout << "pc = " << std::hex << pc << std::endl;
 	std::cout << "num-instr = " << std::dec << csrs.instret.reg << std::endl;
+}
+
+
+void ISS::forward_rocc(Instruction &instr) {
+	auto cmd_monitor = get_cmd_monitor();
+	RoccInstruction rocc_instr(instr.data());
+	cmd_monitor->instr = rocc_instr;
+	cmd_monitor->rs1 = regs[rocc_instr.rs1()];
+	cmd_monitor->rs2 = regs[rocc_instr.rs2()];
+	cmd_monitor->new_cmd_event.notify();
 }

@@ -18,4 +18,6 @@ elseif(COLOR_THEME STREQUAL "DARK")
 endif()
 
 
-target_include_directories(rv32 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(rv32 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/../../platform/common
+)

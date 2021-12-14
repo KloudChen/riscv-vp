@@ -39,7 +39,9 @@ else()
                 accelerator.cpp
                 ${HEADERS})
 
-        target_include_directories(platform-basic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+        target_include_directories(platform-basic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+                ${CMAKE_CURRENT_SOURCE_DIR}/../common
+        )
 
         if (TRUE)
                 target_compile_definitions(platform-basic PUBLIC -DRV32B -DCOSIM)

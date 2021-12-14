@@ -45,7 +45,6 @@
 #include "core/common/rocc_if.h"
 #include "core/common/trap.h"
 #include "mem.h"
-#include "cf_helper.h"
 
 #ifdef RV32B
 using rv32::GenericMemoryProxy;
@@ -55,10 +54,8 @@ using rv64::GenericMemoryProxy;
 
 
 class StrTransformer : public rocc_if, public sc_core::sc_module {
-private:
-	static constexpr int num_buffers = 2;
-
    public:
+   	static constexpr int num_buffers = 2;
     // initiator socket connected to bus (targeting memory) for memory transactions
 	std::array<tlm_utils::simple_initiator_socket<StrTransformer>, 1> isocks{};
     // target socket 0 connected to riscv core, for receiving rocc commands
@@ -77,14 +74,7 @@ private:
         mem_if = mem_proxy;
 	}
 
-    bool is_busy() const override {
-        for (int i = 0; i < num_buffers; i++) {
-            auto pe = get_pe(i);
-            if (!pe->is_busy())
-                return false;
-        }
-        return true;
-    }
+    bool is_busy() const override;
 
 	void transport_core(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay) {
 		auto addr = trans.get_address();
