@@ -68,6 +68,7 @@ private:
 
 	tlm_utils::peq_with_get<tlm::tlm_generic_payload> peq;
 	io_fence_if& core;
+	tlm_utils::tlm_quantumkeeper quantum_keeper;
 	TransAllocator<Transaction<RoccResp>> trans_allocator;
 
 	StrTransformer(sc_core::sc_module_name name, io_fence_if& core);

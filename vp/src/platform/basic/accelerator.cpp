@@ -20,7 +20,3 @@ StrTransformer::StrTransformer(sc_core::sc_module_name name, io_fence_if& core)
     // TODO: memory has no controller (sc_thread), no concurrent memory access from both CORE & ROCC
     tsocks[1].register_b_transport(this, &StrTransformer::transport_mem);
 }
-
-
-
-
