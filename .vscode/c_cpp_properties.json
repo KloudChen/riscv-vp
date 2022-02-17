@@ -15,7 +15,7 @@
                 "vp/src/core/rv32",
                 "vp/src/core/common",
                 "vp/src/platform/common",
-                "D:/40-CoFluent/systemc/systemc/src"
+                "vp/src/platform/axi"
             ]
         }
     ],

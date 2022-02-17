@@ -19,3 +19,5 @@ nbdist/
 nbproject/
 sw/basic-gcov/main.*
 sw/**/*.o
+*/build
+vp/src/platform/axi/dut/obj_dir/*

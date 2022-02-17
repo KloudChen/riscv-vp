@@ -213,7 +213,7 @@ struct ISS : public sc_core::sc_module,
 	uint64_t _compute_and_get_current_cycles();
 
 	void init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint, uint32_t entrypoint, 
-		uint32_t sp, rocc_if*);
+		uint32_t sp, rocc_if* rocc = nullptr);
 
 	void trigger_external_interrupt(PrivilegeLevel level) override;
 
