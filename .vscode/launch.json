@@ -1,0 +1,70 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "riscv-vp",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/vp/build/bin/riscv-vp",
+            "args": ["--intercept-syscalls",
+                     "${workspaceFolder}/sw/str_transformer/main"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "tiny32-mc",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/vp/build/bin/tiny32-mc",
+            "args": ["/home/kloud/cosim/riscv-freertos/Demo/simple-tasks/riscv-main.elf",
+                "--memory-start=2147483648",
+                "--intercept-syscalls"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "tiny32-mc-rocc",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/vp/build/bin/tiny32-mc",
+            "args": ["/home/kloud/cosim/riscv-freertos/Demo/str-transformer/riscv-main.elf",
+                "--memory-start=2147483648",
+                "--intercept-syscalls"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}

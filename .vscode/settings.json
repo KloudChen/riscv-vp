@@ -95,10 +95,24 @@
         "cfenv": "cpp",
         "cinttypes": "cpp",
         "variant": "cpp",
-        "xxatomic": "c"
+        "xxatomic": "c",
+        "mem.h": "c",
+        "sc_cmnhdr.h": "c",
+        "sc_report.h": "c",
+        "tlm_array.h": "c",
+        "allocator.h": "c",
+        "*.ipp": "cpp"
     },
     "cmake.configureOnOpen": false,
     "files.watcherExclude": {
         "**/target": true
-    }
+    },
+    "editor.rulers": [
+        80
+    ],
+    "python.analysis.extraPaths": [
+        "/home/kloud/cof-pack/cof-scl-isim-8.1.1/pycof-linux/Lib/site-packages/",
+        "/p/dpg/arch/perfhome/cofluent/cof-scl/pycof-linux/Lib/site-packages/"
+    ],
+    "python.terminal.executeInFileDir": true
 }

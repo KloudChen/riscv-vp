@@ -2,6 +2,7 @@
 #include <ctime>
 
 #include "core/common/clint.h"
+#include "platform/basic/str_transformer.h"
 #include "elf_loader.h"
 #include "iss.h"
 #include "mem.h"
@@ -32,6 +33,8 @@ public:
 	addr_t clint_end_addr = 0x0200ffff;
 	addr_t sys_start_addr = 0x02010000;
 	addr_t sys_end_addr = 0x020103ff;
+	addr_t rocc_start_addr = ROCC_START_ADDR;
+	addr_t rocc_end_addr = ROCC_END_ADDR;	
 
 	bool quiet = false;
 	bool use_E_base_isa = false;
@@ -67,24 +70,35 @@ int sc_main(int argc, char **argv) {
 
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<3, 3> bus("SimpleBus");
+	SimpleBus<5, 5> bus("SimpleBus");
 	SyscallHandler sys("SyscallHandler");
 	CLINT<2> clint("CLINT");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
+	StrTransformer rocc0("StrTransformer0", core0);
+	StrTransformer rocc1("StrTransformer1", core1);
+	GenericMemoryProxy<reg_t> rocc_mem_if0("", rocc0.quantum_keeper);
+	GenericMemoryProxy<reg_t> rocc_mem_if1("", rocc1.quantum_keeper);
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	core0_mem_if.bus_lock = bus_lock;
 	core1_mem_if.bus_lock = bus_lock;
+	rocc_mem_if0.bus_lock = bus_lock;
+	rocc_mem_if1.bus_lock = bus_lock;
 
 	bus.ports[0] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr);
 	bus.ports[1] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
 	bus.ports[2] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
+	bus.ports[3] = new PortMapping(opt.rocc_start_addr, opt.rocc_end_addr);
+	bus.ports[4] = new PortMapping(opt.rocc_start_addr, opt.rocc_end_addr);
 
 	loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
 
 	core0.init(&core0_mem_if, &core0_mem_if, &clint, loader.get_entrypoint(),
-	           opt.mem_end_addr - 3);  // -3 to not overlap with the next region and stay 32 bit aligned
-	core1.init(&core1_mem_if, &core1_mem_if, &clint, loader.get_entrypoint(), opt.mem_end_addr - 32767);
+	           opt.mem_end_addr - 3, &rocc0);  // -3 to not overlap with the next region and stay 32 bit aligned
+	core1.init(&core1_mem_if, &core1_mem_if, &clint, loader.get_entrypoint(), 
+			   opt.mem_end_addr - 32767, &rocc1);
+	rocc0.init(&rocc_mem_if0);
+	rocc1.init(&rocc_mem_if1);
 
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core0);
@@ -102,6 +116,16 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[0].bind(mem.tsock);
 	bus.isocks[1].bind(clint.tsock);
 	bus.isocks[2].bind(sys.tsock);
+	bus.isocks[3].bind(rocc0.tsocks[1]);
+	bus.isocks[4].bind(rocc1.tsocks[1]);
+
+	core0.isock.bind(rocc0.tsocks[0]);
+	rocc0.isocks[0].bind(core0.tsock);
+	rocc_mem_if0.isock.bind(bus.tsocks[3]);
+
+	core1.isock.bind(rocc1.tsocks[0]);
+	rocc1.isocks[0].bind(core1.tsock);
+	rocc_mem_if1.isock.bind(bus.tsocks[4]);
 
 	// connect interrupt signals/communication
 	clint.target_harts[0] = &core0;

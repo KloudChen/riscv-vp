@@ -1,5 +1,6 @@
 subdirs(common)
 subdirs(basic)
+# subdirs(axi)
 #subdirs(hifive)
 #subdirs(tiny32)
 #subdirs(tiny32-mc)
