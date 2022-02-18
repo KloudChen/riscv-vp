@@ -82,7 +82,9 @@ void RegFile::show() {
 
 ISS::ISS(sc_core::sc_module_name, uint32_t hart_id, bool use_E_base_isa) : 
 	systemc_name("Core-" + std::to_string(hart_id)) {
+#ifdef HAS_ROCC
 	tsock.register_b_transport(this, &ISS::transport);
+#endif
 	csrs.mhartid.reg = hart_id;
 	if (use_E_base_isa)
 		csrs.misa.select_E_base_isa();
@@ -1173,7 +1175,11 @@ void ISS::exec_step() {
 		case Opcode::CUSTOM1:
 		case Opcode::CUSTOM2:
 		case Opcode::CUSTOM3:
+#ifdef HAS_ROCC		
 			execute_rocc(instr);
+#else
+			RAISE_ILLEGAL_INSTRUCTION();
+#endif // HAS_ROCC
 			break;
 
         default:

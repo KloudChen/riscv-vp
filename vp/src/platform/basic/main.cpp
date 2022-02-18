@@ -19,7 +19,9 @@
 #include "syscall.h"
 #include "terminal.h"
 #include "dummy_rocc.h"
+#ifdef HAS_ROCC
 #include "str_transformer.h"
+#endif
 #include "util/options.h"
 #include "platform/common/options.h"
 #include "allocator.h"

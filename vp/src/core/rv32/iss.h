@@ -197,9 +197,12 @@ struct ISS : public sc_core::sc_module,
 	sc_core::sc_time cycle_counter;  // use a separate cycle counter, since cycle count can be inhibited
 	std::array<sc_core::sc_time, Opcode::NUMBER_OF_INSTRUCTIONS> instr_cycles;
 
+#ifdef HAS_ROCC
 	// Rocc sockets
 	tlm_utils::simple_initiator_socket<ISS> isock;
 	tlm_utils::simple_target_socket<ISS> tsock;
+#endif // HAS_ROCC
+
 	TransAllocator<Transaction<RoccCmd>> trans_allocator;
 	rocc_if* rocc;
 
@@ -310,6 +313,7 @@ struct ISS : public sc_core::sc_module,
 		regs[instr.rd()] = data;
 	}
 
+#ifdef HAS_ROCC
 	inline void execute_rocc(Instruction &instr) {
 		auto trans = trans_allocator.allocate();
 		trans->acquire();
@@ -336,6 +340,7 @@ struct ISS : public sc_core::sc_module,
 		regs[resp->rd] = (int32_t)resp->data;
 		trans.release();
 	}
+#endif // HAS_ROCC
 
 	inline bool m_mode() {
 		return prv == MachineMode;
