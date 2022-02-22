@@ -256,7 +256,8 @@ private:
 		// AXI signals, we need to eliminate the accumulated
 		// TLM delay.
 		wait(delay, resetn.negedge_event());
-		delay = SC_ZERO_TIME;
+		// TODO: uncomment this when resolved conflict with mem quantum keeper.
+		// delay = SC_ZERO_TIME;
 
 		m_mutex.lock();
 		if (resetn.read() && Validate(tr)) {
@@ -389,6 +390,8 @@ private:
 					be = trans->get_byte_enable_ptr();
 					be_len = trans->get_byte_enable_length();
 					streaming_width = trans->get_streaming_width();
+					if (!streaming_width)
+						streaming_width = len;
 
 					addr = trans->get_address() + (pos % streaming_width);
 					bitoffset = (addr * 8) % DATA_WIDTH;
@@ -543,7 +546,9 @@ private:
 		unsigned int i;
 		unsigned int maxlen, wlen;
 
-		assert(streaming_width);
+		if (!streaming_width) {
+			streaming_width = len;
+		}
 
 		bitoffset = (addr * 8) % DATA_WIDTH;
 		maxlen = (DATA_WIDTH - bitoffset) / 8;

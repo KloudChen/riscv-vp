@@ -234,6 +234,7 @@ int sc_main(int argc, char **argv) {
 	Display display("Display");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
+	Verilated::commandArgs(argc, argv);
 	sc_clock clk("clk", sc_time(1, SC_NS));
 	sc_signal<bool> rst_n("rst_n"); // Active low.
 	VStringTransformer dut("dut");
@@ -241,6 +242,9 @@ int sc_main(int argc, char **argv) {
     axi2tlm_bridge<64, 32, 1> b_axi2tlm("b_axi2tlm");
 	AXILiteSignals<64, 32> axil_signals("axil_signals");
     AXISignals<64, 32, 1> axi_signals("axi_signals");
+	sc_trace_file *trace_fp = sc_create_vcd_trace_file(argv[0]);
+	axil_signals.Trace(trace_fp);
+	axi_signals.Trace(trace_fp);
 	setup_dut(clk, rst_n, dut, b_tlm2axil, b_axi2tlm, axil_signals, axi_signals);
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
@@ -363,6 +367,9 @@ int sc_main(int argc, char **argv) {
 			++n;
 		}
 	}
-
+	
+	if (trace_fp) {
+		sc_close_vcd_trace_file(trace_fp);
+	}
 	return 0;
 }

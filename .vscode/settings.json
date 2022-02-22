@@ -101,7 +101,9 @@
         "sc_report.h": "c",
         "tlm_array.h": "c",
         "allocator.h": "c",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "regex": "cpp",
+        "shared_mutex": "cpp"
     },
     "cmake.configureOnOpen": false,
     "files.watcherExclude": {
