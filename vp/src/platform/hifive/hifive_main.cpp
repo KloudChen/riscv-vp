@@ -83,6 +83,16 @@ public:
 
 	bool enable_can = false;
 	std::string tun_device = "tun0";
+	
+	bool use_debug_runner = false;
+	bool use_instr_dmi = false;
+	bool use_data_dmi = false;
+	bool trace_mode = false;
+	bool intercept_syscalls = false;
+	unsigned int debug_port = 5005;
+
+	unsigned int tlm_global_quantum = 10;
+	unsigned int seed = 0;
 
 	HifiveOptions(void) {
         	// clang-format off
@@ -97,7 +107,10 @@ int sc_main(int argc, char **argv) {
 	HifiveOptions opt;
 	opt.parse(argc, argv);
 
-	std::srand(std::time(nullptr));  // use current time as seed for random generator
+	if (opt.seed == 0)
+	    std::srand(std::time(nullptr));  // use current time as seed for random generator
+	else
+	    std::srand(opt.seed);
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
@@ -131,7 +144,9 @@ int sc_main(int argc, char **argv) {
 
 	MemoryDMI dram_dmi = MemoryDMI::create_start_size_mapping(dram.data, opt.dram_start_addr, dram.size);
 	MemoryDMI flash_dmi = MemoryDMI::create_start_size_mapping(flash.data, opt.flash_start_addr, flash.size);
-	InstrMemoryProxy instr_mem(flash_dmi, core);
+	//InstrMemoryProxy instr_mem(flash_dmi, core);
+	InstrMemoryProxyWithHiFive1CacheTiming instr_mem(flash_dmi);
+	instr_mem.pipeline = &core.pipeline;
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	iss_mem_if.bus_lock = bus_lock;

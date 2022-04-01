@@ -11,6 +11,7 @@
 #include "mem_if.h"
 #include "syscall_if.h"
 #include "util/common.h"
+#include "timing.h"
 
 #include <assert.h>
 #include <stdint.h>
@@ -179,6 +180,9 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	sc_core::sc_event wfi_event;
 
+    HiFive1PipelineTiming pipeline;
+    HiFive1BranchPredictor branch_predictor;
+
 	std::string systemc_name;
 	tlm_utils::tlm_quantumkeeper quantum_keeper;
 	sc_core::sc_time cycle_time;
@@ -231,6 +235,25 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	void release_lr_sc_reservation() {
 		lr_sc_counter = 0;
 		mem->atomic_unlock();
+	}
+
+    inline uint32_t u_read(uint32_t reg_idx) {
+        return (uint32_t)read(reg_idx);
+    }
+
+    inline int32_t read(uint32_t reg_idx) {
+        pipeline.access_register(reg_idx);
+        return regs[reg_idx];
+	}
+
+	inline uint32_t shamt(uint32_t reg_idx) {
+	    pipeline.access_register(reg_idx);
+	    return regs.shamt(reg_idx);
+	}
+
+	inline void write(uint32_t reg_idx, uint32_t value) {
+        pipeline.access_register(reg_idx);
+        regs[reg_idx] = value;
 	}
 
 	void fp_prepare_instr();

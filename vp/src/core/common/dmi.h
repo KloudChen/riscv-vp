@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <string.h>
 
 class MemoryDMI {
 	uint8_t *mem;
