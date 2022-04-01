@@ -85,6 +85,7 @@ ISS::ISS(uint32_t hart_id, bool use_E_base_isa) : systemc_name("Core-" + std::to
 	if (use_E_base_isa)
 		csrs.misa.select_E_base_isa();
 
+	pipeline.iss = this;
     branch_predictor.pipeline = &pipeline;
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
@@ -1912,11 +1913,11 @@ void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
 	//NOTE: can set *new_cycles* here accordingly (1 cycle plus any pipeline stall since the last instruction) to also update the SystemC time.
 	/*********************************/
 
-	quantum_keeper.inc(new_cycles);
-	if (quantum_keeper.need_sync()) {
-	    if (lr_sc_counter == 0) // match SystemC sync with bus unlocking in a tight LR_W/SC_W loop
-		    quantum_keeper.sync();
-	}
+	// quantum_keeper.inc(new_cycles);
+	// if (quantum_keeper.need_sync()) {
+	//     if (lr_sc_counter == 0) // match SystemC sync with bus unlocking in a tight LR_W/SC_W loop
+	// 	    quantum_keeper.sync();
+	// }
 }
 
 void ISS::run_step() {

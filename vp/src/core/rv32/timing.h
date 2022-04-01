@@ -2,11 +2,16 @@
 #define RISCV_VP_TIMING_H
 
 #include <stdint.h>
-
+#include <assert.h>
+#include <stdlib.h>
 #include <vector>
 #include <list>
 #include <deque>
+#include <array>
 
+namespace rv32 {
+    struct ISS;
+}
 
 /*
  * Timing model for the HiFive1 pipeline.
@@ -115,39 +120,13 @@ struct HiFive1PipelineTiming {
     OperationReservation div;
     std::vector<StoreReservation> pending_store_reservations;
     uint64_t num_total_cycles;
+    rv32::ISS* iss;
 
     /*
      * Called by the ISS after execution of every instruction to advance the timing model
      * for one clock cycle.
      */
-    void advance(int num_cycles=1) {
-        assert (num_cycles > 0);
-
-        {
-            auto it = pending_register_latencies.begin();
-            while (it != pending_register_latencies.end()) {
-                if (!it->advance(num_cycles))
-                    it = pending_register_latencies.erase(it);
-                else
-                    ++it;
-            }
-        }
-
-        mult.advance(num_cycles);
-        div.advance(num_cycles);
-
-        {
-            auto it = pending_store_reservations.begin();
-            while (it != pending_store_reservations.end()) {
-                if (!it->advance(num_cycles))
-                    it = pending_store_reservations.erase(it);
-                else
-                    ++it;
-            }
-        }
-
-        num_total_cycles += num_cycles;
-    }
+    void advance(int num_cycles=1);
 
     void stall(int num_cycles) {
         advance(num_cycles);
