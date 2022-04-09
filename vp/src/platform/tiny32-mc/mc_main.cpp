@@ -1,11 +1,28 @@
 #include <cstdlib>
 #include <ctime>
 
+#include <sstream>
+#include <string>
+#include <vector>
+#include <array>
+
+#define SC_INCLUDE_DYNAMIC_PROCESSES
+
+#include "systemc"
+using namespace sc_core;
+using namespace sc_dt;
+using namespace std;
+
+#include "tlm-modules/cache-chi.h"
+#include "tlm-modules/iconnect-chi.h"
+#include "tlm-modules/sn-chi.h"
+#include "txn_router.h"
+
 #include "core/common/clint.h"
 #include "elf_loader.h"
 #include "iss.h"
 #include "mem.h"
-#include "memory.h"
+#include "chi-memory.h"
 #include "syscall.h"
 #include "platform/common/options.h"
 
@@ -20,10 +37,14 @@
 using namespace rv32;
 namespace po = boost::program_options;
 
+#define NODE_ID_RNF0 0
+#define NODE_ID_RNF1 1
+
+#define CACHE_SIZE (4 * CACHELINE_SZ)
+
 struct TinyOptions : public Options {
 public:
 	typedef unsigned int addr_t;
-
 	addr_t mem_size = 1024 * 1024 * 32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume
 	                                     // memory start at zero) without modifications
 	addr_t mem_start_addr = 0x00000000;
@@ -52,6 +73,24 @@ public:
 	}
 };
 
+template<typename T1, typename T2>
+void connect_rn(T1& rn, T2& port_RN_F) {
+	rn.txreq_init_socket(port_RN_F->rxreq_tgt_socket);
+	rn.txdat_init_socket(port_RN_F->rxdat_tgt_socket);
+	rn.txrsp_init_socket(port_RN_F->rxrsp_tgt_socket);
+	port_RN_F->txsnp_init_socket(rn.rxsnp_tgt_socket);
+	port_RN_F->txrsp_init_socket(rn.rxrsp_tgt_socket);
+	port_RN_F->txdat_init_socket(rn.rxdat_tgt_socket);
+}
+
+template<typename T1, typename T2>
+void connect_sn(T1& sn, T2& port_SN) {
+	port_SN->txreq_init_socket(sn.rxreq_tgt_socket);
+	port_SN->txdat_init_socket(sn.rxdat_tgt_socket);
+	sn.txrsp_init_socket(port_SN->rxrsp_tgt_socket);
+	sn.txdat_init_socket(port_SN->rxdat_tgt_socket);
+}
+
 int sc_main(int argc, char **argv) {
 	TinyOptions opt;
 	opt.parse(argc, argv);
@@ -72,6 +111,26 @@ int sc_main(int argc, char **argv) {
 	CLINT<2> clint("CLINT");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
+	TxnRouter txn_router0("txn_router0", opt.mem_start_addr, opt.mem_size);
+	TxnRouter txn_router1("txn_router1", opt.mem_start_addr, opt.mem_size);
+	cache_chi<NODE_ID_RNF0, CACHE_SIZE> rnf0("rnf0");
+	cache_chi<NODE_ID_RNF1, CACHE_SIZE> rnf1("rnf1");
+	iconnect_chi<> icn("iconnect_chi");
+	SlaveNode_F<> sn("sn");
+
+	// connect chi components
+	core0_mem_if.isock(txn_router0.tsock);
+	core1_mem_if.isock(txn_router1.tsock);
+	txn_router0.iscock_mem(rnf0.target_socket);
+	txn_router1.iscock_mem(rnf1.target_socket);
+	txn_router0.iscock_bus(bus.tsocks[0]);
+	txn_router1.iscock_bus(bus.tsocks[1]);
+	connect_rn(rnf0, icn.port_RN_F[0]);
+	connect_rn(rnf1, icn.port_RN_F[1]);
+	connect_sn(sn, icn.port_SN);
+	sn.init_socket(mem.tsock_sn);
+
+	// TODO: maybe bus lock is not required, since CHI can guarantee order
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	core0_mem_if.bus_lock = bus_lock;
 	core1_mem_if.bus_lock = bus_lock;
@@ -96,8 +155,6 @@ int sc_main(int argc, char **argv) {
 	}
 
 	// connect TLM sockets
-	core0_mem_if.isock.bind(bus.tsocks[0]);
-	core1_mem_if.isock.bind(bus.tsocks[1]);
 	dbg_if.isock.bind(bus.tsocks[2]);
 	bus.isocks[0].bind(mem.tsock);
 	bus.isocks[1].bind(clint.tsock);
