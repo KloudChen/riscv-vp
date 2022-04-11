@@ -29,9 +29,5 @@ void HiFive1PipelineTiming::advance(int num_cycles) {
 
     num_total_cycles += num_cycles;
 
-    iss->quantum_keeper.inc(num_cycles * iss->cycle_time);
-    if (iss->quantum_keeper.need_sync()) {
-        if (iss->lr_sc_counter == 0) // match SystemC sync with bus unlocking in a tight LR_W/SC_W loop
-            iss->quantum_keeper.sync();
-    }
+    quantum_keeper->inc(num_cycles * cycle_time);
 }

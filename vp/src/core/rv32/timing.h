@@ -8,6 +8,8 @@
 #include <list>
 #include <deque>
 #include <array>
+#include <systemc>
+#include <tlm_utils/tlm_quantumkeeper.h>
 
 namespace rv32 {
     struct ISS;
@@ -120,7 +122,8 @@ struct HiFive1PipelineTiming {
     OperationReservation div;
     std::vector<StoreReservation> pending_store_reservations;
     uint64_t num_total_cycles;
-    rv32::ISS* iss;
+    tlm_utils::tlm_quantumkeeper* quantum_keeper;
+    sc_core::sc_time cycle_time;
 
     /*
      * Called by the ISS after execution of every instruction to advance the timing model
