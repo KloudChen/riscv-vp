@@ -151,6 +151,10 @@ private:
 			m_chiattr->SetDBID(DBID);
 		}
 
+		virtual std::string GetOpCodeStr() const {
+			return "Invalid";
+		}
+
 	protected:
 
 		tlm::tlm_generic_payload *m_gp;
@@ -895,6 +899,16 @@ private:
 
 		unsigned int GetDataReceived() { return m_dataReceived; }
 
+		std::string GetOpCodeStr() const override {
+			auto it = Req::OpCodeString.find(m_chiattr->GetOpcode());
+			if (it == Req::OpCodeString.end()) {
+				std::cout << "Invalid Opcode: " 
+					<< m_chiattr->GetOpcode() << std::endl;
+				return "Invalid";
+			}
+			return it->second;
+		}
+
 	private:
 
 		unsigned int CopyData(tlm::tlm_generic_payload& gp,
@@ -1072,6 +1086,16 @@ private:
 		bool IsReadReceipt()
 		{
 			return m_chiattr->GetOpcode() == Rsp::ReadReceipt;
+		}
+
+		std::string GetOpCodeStr() const {
+			auto it = Rsp::OpCodeString.find(m_chiattr->GetOpcode());
+			if (it == Rsp::OpCodeString.end()) {
+				std::cout << "Invalid Opcode: " 
+					<< m_chiattr->GetOpcode() << std::endl;
+				return "Invalid";
+			}
+			return it->second;
 		}
 
 	private:
@@ -1255,6 +1279,16 @@ private:
 		bool GetPassDirty()
 		{
 			return (m_chiattr->GetResp() >> PassDirtyShift) & 0x1;
+		}
+
+		std::string GetOpCodeStr() const override {
+			auto it = Dat::OpCodeString.find(m_chiattr->GetOpcode());
+			if (it == Dat::OpCodeString.end()) {
+				std::cout << "Invalid Opcode: " 
+					<< m_chiattr->GetOpcode() << std::endl;
+				return "Invalid";
+			}
+			return it->second;
 		}
 	};
 
@@ -1448,6 +1482,16 @@ private:
 				break;
 			}
 			return false;
+		}
+
+		std::string GetOpCodeStr() const override {
+			auto it = Snp::OpCodeString.find(m_chiattr->GetOpcode());
+			if (it == Snp::OpCodeString.end()) {
+				std::cout << "Invalid Opcode: " 
+					<< m_chiattr->GetOpcode() << std::endl;
+				return "Invalid";
+			}
+			return it->second;
 		}
 
 	private:
@@ -1645,12 +1689,18 @@ private:
 				assert(t->GetGP().get_response_status() ==
 						tlm::TLM_INCOMPLETE_RESPONSE);
 
+				log_trans(t);
 				m_init_socket->b_transport(t->GetGP(), delay);
 
 				assert(t->GetGP().get_response_status() ==
 						tlm::TLM_OK_RESPONSE);
 				delete t;
 			}
+		}
+
+		void log_trans(IMsg* trans) {
+			auto opcode = trans->GetOpCodeStr();
+			std::cout << "iconnect sending: " << opcode << std::endl;
 		}
 
 		tlm_utils::simple_initiator_socket<T>& m_init_socket;

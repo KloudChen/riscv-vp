@@ -72,6 +72,13 @@ private:
 		virtual void Process(ITxn *t) = 0;
 	};
 
+	enum ChannelT {
+		REQ = 0,
+		DAT,
+		RSP
+	};
+
+	template<ChannelT CT = ChannelT::REQ>
 	class TxChannel :
 		public sc_core::sc_module
 	{
@@ -124,6 +131,7 @@ private:
 				assert(t->GetGP().get_response_status() ==
 						tlm::TLM_INCOMPLETE_RESPONSE);
 
+				log_trans(t);
 				m_init_socket->b_transport(t->GetGP(), delay);
 
 				assert(t->GetGP().get_response_status() ==
@@ -146,6 +154,29 @@ private:
 			}
 		}
 
+		void log_trans(ITxn* trans) {
+			chiattr_extension* chiattr;
+			trans->GetGP().get_extension(chiattr);
+			assert(chiattr);
+			auto opcode = chiattr->GetOpcode();
+			std::string opcodestr;
+			switch (CT) {
+				case ChannelT::REQ:
+					opcodestr = Req::OpCodeString.at(opcode);
+					break;
+				case ChannelT::DAT:
+					opcodestr = Dat::OpCodeString.at(opcode);
+					break;
+				case ChannelT::RSP:
+					opcodestr = Rsp::OpCodeString.at(opcode);
+					break;
+				default:
+					break;
+			}
+			
+			std::cout << "Cache sending: " << opcodestr << std::endl;
+		}
+
 		tlm_utils::simple_initiator_socket<cache_chi>& m_init_socket;
 		std::list<ITxn*> m_txList;
 		sc_event m_listEvent;
@@ -156,8 +187,8 @@ private:
 		public ITransmitter
 	{
 	public:
-		Transmitter(TxChannel& txRspChannel,
-				TxChannel& txDatChannel) :
+		Transmitter(TxChannel<ChannelT::RSP>& txRspChannel,
+				TxChannel<ChannelT::DAT>& txDatChannel) :
 			m_txRspChannel(txRspChannel),
 			m_txDatChannel(txDatChannel)
 		{}
@@ -191,16 +222,16 @@ private:
 		}
 
 	private:
-		TxChannel& m_txRspChannel;
-		TxChannel& m_txDatChannel;
+		TxChannel<ChannelT::RSP>& m_txRspChannel;
+		TxChannel<ChannelT::DAT>& m_txDatChannel;
 	};
 
 	class ICache
 	{
 	public:
-		ICache(TxChannel& txReqChannel,
-				TxChannel& txRspChannel,
-				TxChannel& txDatChannel,
+		ICache(TxChannel<ChannelT::REQ>& txReqChannel,
+				TxChannel<ChannelT::RSP>& txRspChannel,
+				TxChannel<ChannelT::DAT>& txDatChannel,
 				TxnIDs *ids,
 				ITxn   **txn) :
 			m_cacheline(new CacheLine[NUM_CACHELINES]),
@@ -1853,9 +1884,9 @@ private:
 	protected:
 		CacheLine *m_cacheline;
 
-		TxChannel& m_txReqChannel;
-		TxChannel& m_txRspChannel;
-		TxChannel& m_txDatChannel;
+		TxChannel<ChannelT::REQ>& m_txReqChannel;
+		TxChannel<ChannelT::RSP>& m_txRspChannel;
+		TxChannel<ChannelT::DAT>& m_txDatChannel;
 
 		TxnIDs *m_ids;
 		ITxn   **m_txn;
@@ -1870,9 +1901,9 @@ private:
 	class CacheWriteBack : public ICache
 	{
 	public:
-		CacheWriteBack(TxChannel& txReqChannel,
-				TxChannel& txRspChannel,
-				TxChannel& txDatChannel,
+		CacheWriteBack(TxChannel<ChannelT::REQ>& txReqChannel,
+				TxChannel<ChannelT::RSP>& txRspChannel,
+				TxChannel<ChannelT::DAT>& txDatChannel,
 				TxnIDs *ids,
 				ITxn   **txn) :
 			ICache(txReqChannel,
@@ -2341,9 +2372,9 @@ private:
 	}
 
 
-	TxChannel m_txReqChannel;
-	TxChannel m_txRspChannel;
-	TxChannel m_txDatChannel;
+	TxChannel<ChannelT::REQ> m_txReqChannel;
+	TxChannel<ChannelT::RSP> m_txRspChannel;
+	TxChannel<ChannelT::DAT> m_txDatChannel;
 
 	Transmitter m_transmitter;
 

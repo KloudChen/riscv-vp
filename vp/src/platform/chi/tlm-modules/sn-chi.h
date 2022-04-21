@@ -77,6 +77,10 @@ private:
 		uint16_t GetSrcID() { return m_chiattr->GetSrcID(); }
 		uint8_t GetDBID() { return m_chiattr->GetDBID(); }
 
+		virtual std::string GetOpCodeStr() const {
+			return "Invalid";
+		}
+
 	protected:
 
 		tlm::tlm_generic_payload m_gp;
@@ -328,6 +332,15 @@ private:
 		uint8_t *GetOrginialData() { return m_data; }
 		uint8_t *GetOrginialByteEnable() { return m_byteEnable; }
 
+		std::string GetOpCodeStr() const override {
+			auto it = Req::OpCodeString.find(m_chiattr->GetOpcode());
+			if (it == Req::OpCodeString.end()) {
+				std::cout << "Invalid Opcode: "
+					<< m_chiattr->GetOpcode() << std::endl;
+				return "Invalid";
+			}
+			return it->second;
+		}
 	private:
 
 		unsigned int CopyData(tlm::tlm_generic_payload& gp,
@@ -393,6 +406,16 @@ private:
 			m_chiattr->SetOpcode(opcode);
 			m_chiattr->SetTraceTag(attr->GetTraceTag());
 		};
+
+		std::string GetOpCodeStr() const override {
+			auto it = Rsp::OpCodeString.find(m_chiattr->GetOpcode());
+			if (it == Rsp::OpCodeString.end()) {
+				std::cout << "Invalid Opcode: "
+					<< m_chiattr->GetOpcode() << std::endl;
+				return "Invalid";
+			}
+			return it->second;
+		}
 	};
 
 	class DatMsg :
@@ -460,6 +483,16 @@ private:
 				m_chiattr->SetResp(INV);
 			}
 		}
+
+		std::string GetOpCodeStr() const override {
+			auto it = Dat::OpCodeString.find(m_chiattr->GetOpcode());
+			if (it == Dat::OpCodeString.end()) {
+				std::cout << "Invalid Opcode: "
+					<< m_chiattr->GetOpcode() << std::endl;
+				return "Invalid";
+			}
+			return it->second;
+		}
 	};
 
 	template<typename T>
@@ -501,12 +534,18 @@ private:
 				assert(msg->GetGP().get_response_status() ==
 						tlm::TLM_INCOMPLETE_RESPONSE);
 
+				log_trans(msg);
 				m_init_socket->b_transport(msg->GetGP(), delay);
 
 				assert(msg->GetGP().get_response_status() ==
 						tlm::TLM_OK_RESPONSE);
 				delete msg;
 			} }
+		
+		void log_trans(IMsg* trans) {
+			auto opcode = trans->GetOpCodeStr();
+			std::cout << "SN sending: " << opcode << std::endl;
+		}
 
 		tlm_utils::simple_initiator_socket<T>& m_init_socket;
 		std::list<IMsg*> m_txList;

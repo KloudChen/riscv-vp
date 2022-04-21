@@ -30,6 +30,10 @@
 #ifndef TLM_BRIDGES_AMBA_CHI_H__
 #define TLM_BRIDGES_AMBA_CHI_H__
 
+#include <map>
+#include <string>
+#include <cstdint>
+
 namespace AMBA {
 namespace CHI {
 
@@ -85,6 +89,45 @@ namespace Req {
 		AtomicSwap = 0x38,
 		AtomicCompare = 0x39,
 		PrefetchTgt = 0x3A,
+	};
+
+	const std::map<uint8_t, std::string> OpCodeString = {
+		{ReqLCrdReturn, "ReqLCrdReturn"},
+		{ReadShared, "ReadShared"},
+		{ReadClean, "ReadClean"},
+		{ReadOnce, "ReadOnce"},
+		{ReadNoSnp, "ReadNoSnp"},
+		{PCrdReturn, "PCrdReturn"},
+		{ReadUnique, "ReadUnique"},
+		{CleanShared, "CleanShared"},
+		{CleanInvalid, "CleanInvalid"},
+		{MakeInvalid, "MakeInvalid"},
+		{CleanUnique, "CleanUnique"},
+		{MakeUnique, "MakeUnique"},
+		{Evict, "Evict"},
+		{ReadNoSnpSep, "ReadNoSnpSep"},
+		{DVMOp, "DVMOp"},
+		{WriteEvictFull, "WriteEvictFull"},
+		{WriteCleanFull, "WriteCleanFull"},
+		{WriteUniquePtl, "WriteUniquePtl"},
+		{WriteUniqueFull, "WriteUniqueFull"},
+		{WriteBackPtl, "WriteBackPtl"},
+		{WriteBackFull, "WriteBackFull"},
+		{WriteNoSnpPtl, "WriteNoSnpPtl"},
+		{WriteNoSnpFull, "WriteNoSnpFull"},
+		{WriteUniqueFullStash, "WriteUniqueFullStash"},
+		{WriteUniquePtlStash, "WriteUniquePtlStash"},
+		{StashOnceShared, "StashOnceShared"},
+		{StashOnceUnique, "StashOnceUnique"},
+		{ReadOnceCleanInvalid, "ReadOnceCleanInvalid"},
+		{ReadOnceMakeInvalid, "ReadOnceMakeInvalid"},
+		{ReadNotSharedDirty, "ReadNotSharedDirty"},
+		{CleanSharedPersist, "CleanSharedPersist"},
+		{AtomicStore, "AtomicStore"},
+		{AtomicLoad, "AtomicLoad"},
+		{AtomicSwap, "AtomicSwap"},
+		{AtomicCompare, "AtomicCompare"},
+		{PrefetchTgt, "PrefetchTgt"}
 	};
 
 	// Sub-opcodes for AtomicLoad and AtomicStore
@@ -147,6 +190,20 @@ namespace Rsp {
 		RespSepData = 0xB,
 	};
 
+	const std::map<uint8_t, std::string> OpCodeString = {
+		{RespLCrdReturn, "RespLCrdReturn"},
+		{SnpResp, "SnpResp"},
+		{CompAck, "CompAck"},
+		{RetryAck, "RetryAck"},
+		{Comp, "Comp"},
+		{CompDBIDResp, "CompDBIDResp"},
+		{DBIDResp, "DBIDResp"},
+		{PCrdGrant, "PCrdGrant"},
+		{ReadReceipt, "ReadReceipt"},
+		{SnpRespFwded, "SnpRespFwded"},
+		{RespSepData, "RespSepData"}
+	};
+
 	// Static flit field widths
 	enum {
 		QoS_Width = 4,
@@ -184,6 +241,27 @@ namespace Snp {
 		SnpUniqueFwd = 0x17,
 	};
 
+	const std::map<uint8_t, std::string> OpCodeString = {
+		{SnpLCrdReturn, "SnpLCrdReturn"},
+		{SnpShared, "SnpShared"},
+		{SnpClean, "SnpClean"},
+		{SnpOnce, "SnpOnce"},
+		{SnpNotSharedDirty, "SnpNotSharedDirty"},
+		{SnpUniqueStash, "SnpUniqueStash"},
+		{SnpMakeInvalidStash, "SnpMakeInvalidStash"},
+		{SnpUnique, "SnpUnique"},
+		{SnpCleanShared, "SnpCleanShared"},
+		{SnpCleanInvalid, "SnpCleanInvalid"},
+		{SnpMakeInvalid, "SnpMakeInvalid"},
+		{SnpStashUnique, "SnpStashUnique"},
+		{SnpStashShared, "SnpStashShared"},
+		{SnpDVMOp, "SnpDVMOp"},
+		{SnpSharedFwd, "SnpSharedFwd"},
+		{SnpCleanFwd, "SnpCleanFwd"},
+		{SnpOnceFwd, "SnpOnceFwd"},
+		{SnpNotSharedDirtyFwd, "SnpNotSharedDirtyFwd"},
+		{SnpUniqueFwd, "SnpUniqueFwd"}
+	};
 	// Static flit field widths
 	enum {
 		QoS_Width = 4,
@@ -209,6 +287,19 @@ namespace Dat {
 		WriteDataCancel = 0x7,
 		DataSepResp = 0xB,
 		NCBWrDataCompAck = 0xC,
+	};
+
+	const std::map<uint8_t, std::string> OpCodeString = {
+		{DataLCrdReturn, "DataLCrdReturn"},
+		{SnpRespData, "SnpRespData"},
+		{CopyBackWrData, "CopyBackWrData"},
+		{NonCopyBackWrData, "NonCopyBackWrData"},
+		{CompData, "CompData"},
+		{SnpRespDataPtl, "SnpRespDataPtl"},
+		{SnpRespDataFwded, "SnpRespDataFwded"},
+		{WriteDataCancel, "WriteDataCancel"},
+		{DataSepResp, "DataSepResp"},
+		{NCBWrDataCompAck, "NCBWrDataCompAck"}
 	};
 
 	// Static flit field widths
