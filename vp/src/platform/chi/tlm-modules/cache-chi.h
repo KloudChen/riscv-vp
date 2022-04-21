@@ -31,6 +31,7 @@
 #define TLM_MODULES_CACHE_CHI_H__
 
 #include <list>
+#include <iomanip>
 
 #include "tlm.h"
 #include "tlm_utils/simple_initiator_socket.h"
@@ -174,7 +175,11 @@ private:
 					break;
 			}
 			
-			std::cout << "Cache sending: " << opcodestr << std::endl;
+			auto ts = sc_core::sc_time_stamp();
+			std::cout << std::left << std::setw(10) << ts << " ";
+			std::cout << "RN[" << std::setw(2) << NODE_ID << "] -> HN[" 
+				<< std::setw(2) << ICN_ID << "]: " 
+				<< opcodestr << std::endl;
 		}
 
 		tlm_utils::simple_initiator_socket<cache_chi>& m_init_socket;

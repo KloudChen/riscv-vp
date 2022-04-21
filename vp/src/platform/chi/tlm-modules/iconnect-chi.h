@@ -31,6 +31,7 @@
 #define TLM_MODULES_ICONNECT_CHI_H__
 
 #include <list>
+#include <iomanip>
 
 #include "tlm.h"
 #include "tlm_utils/simple_initiator_socket.h"
@@ -1699,8 +1700,12 @@ private:
 		}
 
 		void log_trans(IMsg* trans) {
+			auto ts = sc_core::sc_time_stamp();
+			std::cout << std::left << std::setw(10) << ts << " ";
 			auto opcode = trans->GetOpCodeStr();
-			std::cout << "iconnect sending: " << opcode << std::endl;
+			std::cout << "HN[" << std::setw(2) << NODE_ID << "] -> XN[" 
+				<< std::setw(2) << trans->GetTgtID()
+				<< "]: " << opcode << std::endl;
 		}
 
 		tlm_utils::simple_initiator_socket<T>& m_init_socket;

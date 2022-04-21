@@ -31,6 +31,7 @@
 #define TLM_MODULES_SN_CHI_H__
 
 #include <list>
+#include <iomanip>
 #include <endian.h>
 
 #include "tlm.h"
@@ -42,7 +43,8 @@
 
 using namespace AMBA::CHI;
 
-template<int NODE_ID=10>
+template<int NODE_ID=10,
+	int ICN_ID=20>
 class SlaveNode_F :
 	public sc_core::sc_module
 {
@@ -543,8 +545,12 @@ private:
 			} }
 		
 		void log_trans(IMsg* trans) {
+			auto ts = sc_core::sc_time_stamp();
+			std::cout << std::left << std::setw(10) << ts << " ";
 			auto opcode = trans->GetOpCodeStr();
-			std::cout << "SN sending: " << opcode << std::endl;
+			std::cout << "SN[" << std::setw(2) << NODE_ID << "] -> HN[" 
+				<< std::setw(2) << ICN_ID << "]: " 
+				<< opcode << std::endl;
 		}
 
 		tlm_utils::simple_initiator_socket<T>& m_init_socket;
