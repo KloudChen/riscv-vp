@@ -177,9 +177,12 @@ private:
 			
 			auto ts = sc_core::sc_time_stamp();
 			std::cout << std::left << std::setw(10) << ts << " ";
-			std::cout << "RN[" << std::setw(2) << NODE_ID << "] -> HN[" 
+			std::cout << "RN[" << std::setw(2) 
+				<< NODE_ID << "] -> HN[" 
 				<< std::setw(2) << ICN_ID << "]: " 
-				<< opcodestr << std::endl;
+				<< std::right << std::setfill('0') << std::setw(8) << std::hex 
+				<< trans->GetGP().get_address() << " "
+				<< std::setfill(' ') << opcodestr << std::endl;
 		}
 
 		tlm_utils::simple_initiator_socket<cache_chi>& m_init_socket;

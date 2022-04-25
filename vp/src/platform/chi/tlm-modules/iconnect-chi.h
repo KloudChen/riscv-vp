@@ -1703,9 +1703,12 @@ private:
 			auto ts = sc_core::sc_time_stamp();
 			std::cout << std::left << std::setw(10) << ts << " ";
 			auto opcode = trans->GetOpCodeStr();
-			std::cout << "HN[" << std::setw(2) << NODE_ID << "] -> XN[" 
-				<< std::setw(2) << trans->GetTgtID()
-				<< "]: " << opcode << std::endl;
+			std::cout << "HN[" << std::setw(2) 
+				<< NODE_ID << "] -> XN[" 
+				<< std::setw(2) << trans->GetTgtID() << "]: " 
+				<< std::right << std::setfill('0') << std::setw(8) << std::hex 
+				<< trans->GetGP().get_address() << " "
+				<< std::setfill(' ') << opcode << std::endl;
 		}
 
 		tlm_utils::simple_initiator_socket<T>& m_init_socket;
