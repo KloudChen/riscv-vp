@@ -25,6 +25,7 @@
 #include <memory>
 #include <string>
 #include <systemc>
+#include <tlm_utils/simple_initiator_socket.h>
 
 #include "iss.h"
 #include "memory.h"
@@ -49,8 +50,12 @@ class RiscvVpAdapterBuilder;
 class RiscvVpAdapter : public sc_core::sc_module  {
 public:
     friend class RiscvVpAdapterBuilder;
-    bool Init();
 
+    ~RiscvVpAdapter();
+
+    bool init();
+
+    // connect the memory interface
     template<typename T>
 	void connect(T& dev) {
         bus.isocks[0].bind(dev.tsock);
@@ -62,7 +67,7 @@ private:
     void operator=(const RiscvVpAdapter&);
 
     ISS core;
-    SimpleMemory mem;
+    SimpleMemory* mem;
     ELFLoader loader;
     CombinedMemoryInterface iss_mem_if;
     SyscallHandler sys;
@@ -89,9 +94,8 @@ public:
     RiscvVpAdapterBuilder& set_sys_end_addr(addr_t sys_end_addr);
     RiscvVpAdapterBuilder& set_entry_point(unsigned long entry_point);
     RiscvVpAdapterBuilder& set_input_program(const string& input_program);
-    RiscvVpAdapterBuilder& set_use_instr_dmi(bool use_instr_dmi);
-    RiscvVpAdapterBuilder& set_use_data_dmi(bool use_data_dmi);
     RiscvVpAdapterBuilder& set_intercept_syscalls(bool intercept_syscalls);
+    RiscvVpAdapterBuilder& set_memory(SimpleMemory* mem);
 
     bool build(shared_ptr<RiscvVpAdapter>* adapter);
 
@@ -110,9 +114,8 @@ private:
     unsigned long entry_point_;
     bool entry_point_set_;
     string input_program_;
-    bool use_instr_dmi_;
-    bool use_data_dmi_;
     bool intercept_syscalls_;
+    SimpleMemory* mem_;
 };
 
 }

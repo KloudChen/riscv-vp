@@ -4,9 +4,7 @@ add_executable(tiny32-mc
         mc_main.cpp
         ${HEADERS})
 
-target_include_directories(tiny32-mc PUBLIC ${CHI_INCLUDE_DIR})
-
-target_link_libraries(tiny32-mc rv32 platform-common gdb-mc
+target_link_libraries(tiny32-mc rv32 platform-common platform-chi gdb-mc
 	${Boost_LIBRARIES} ${SystemC_LIBRARIES} pthread)
 
 INSTALL(TARGETS tiny32-mc RUNTIME DESTINATION bin)

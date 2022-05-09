@@ -8,8 +8,6 @@ RiscvVpAdapterBuilder::RiscvVpAdapterBuilder()
     mem_size_(1024 * 1024 * 32),
     input_program_(""),
     entry_point_set_(false),
-    use_instr_dmi_(false),
-    use_data_dmi_(false),
     intercept_syscalls_(true) {
         
 }
@@ -60,18 +58,13 @@ RiscvVpAdapterBuilder& RiscvVpAdapterBuilder::set_input_program(const string& in
     return *this;
 }
 
-RiscvVpAdapterBuilder& RiscvVpAdapterBuilder::set_use_instr_dmi(bool use_instr_dmi) {
-    use_instr_dmi_ = use_instr_dmi;
-    return *this;
-}
-
-RiscvVpAdapterBuilder& RiscvVpAdapterBuilder::set_use_data_dmi(bool use_data_dmi) {
-    use_data_dmi_ = use_data_dmi;
-    return *this;
-}
-
 RiscvVpAdapterBuilder& RiscvVpAdapterBuilder::set_intercept_syscalls(bool intercept_syscalls) {
     intercept_syscalls_ = intercept_syscalls;
+    return *this;
+}
+
+RiscvVpAdapterBuilder& RiscvVpAdapterBuilder::set_memory(SimpleMemory* mem) {
+    mem_ = mem;
     return *this;
 }
 
@@ -81,7 +74,7 @@ bool RiscvVpAdapterBuilder::build(shared_ptr<RiscvVpAdapter>* adapter) {
 
     mem_end_addr_ = mem_start_addr_ + mem_size_ - 1;
     RiscvVpAdapter* new_adapter(new RiscvVpAdapter(*this));
-    new_adapter->Init();
+    new_adapter->init();
     *adapter = shared_ptr<RiscvVpAdapter>(new_adapter);
     return true;
 }
@@ -90,36 +83,29 @@ bool RiscvVpAdapterBuilder::build(shared_ptr<RiscvVpAdapter>* adapter) {
 RiscvVpAdapter::RiscvVpAdapter(const RiscvVpAdapterBuilder& bld) :
     sc_module(sc_core::sc_module_name(("riscv_vp_adapter_" + to_string(bld.core_id_)).c_str())),
     core(bld.core_id_),
-    mem("SimpleMemory", bld.mem_size_),
+    mem(bld.mem_),
     loader(bld.input_program_.c_str()),
     iss_mem_if("MemoryInterface", core),
     sys("SyscallHandler"),
     clint("CLINT"),
     bus("SimpleBus") {
 
-    MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, bld.mem_start_addr_, mem.size);
-    InstrMemoryProxy instr_mem(dmi, core);
+    assert(mem != nullptr);
+
     std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	iss_mem_if.bus_lock = bus_lock;
-    instr_memory_if *instr_mem_if = &iss_mem_if;
-	data_memory_if *data_mem_if = &iss_mem_if;
-    if (bld.use_instr_dmi_)
-		instr_mem_if = &instr_mem;
-	if (bld.use_data_dmi_) {
-		iss_mem_if.dmi_ranges.emplace_back(dmi);
-	}
 
     uint64_t entry_point = loader.get_entrypoint();
 	if (bld.entry_point_set_)
 		entry_point = bld.entry_point_;
 	try {
-		loader.load_executable_image(mem, mem.size, bld.mem_start_addr_);
+		loader.load_executable_image(*mem, mem->size, bld.mem_start_addr_);
 	} catch(ELFLoader::load_executable_exception& e) {
 		std::cerr << e.what() << std::endl;
 	}
 
-    core.init(instr_mem_if, data_mem_if, &clint, entry_point, rv32_align_address(bld.mem_end_addr_));
-	sys.init(mem.data, bld.mem_start_addr_, loader.get_heap_addr());
+    core.init(&iss_mem_if, &iss_mem_if, &clint, entry_point, rv32_align_address(bld.mem_end_addr_));
+	sys.init(mem->data, bld.mem_start_addr_, loader.get_heap_addr());
 	sys.register_core(&core);
 
 	if (bld.intercept_syscalls_)
@@ -133,7 +119,7 @@ RiscvVpAdapter::RiscvVpAdapter(const RiscvVpAdapterBuilder& bld) :
     // connect TLM sockets
 	iss_mem_if.isock.bind(bus.tsocks[0]);
 
-    // bus.isocks[0].bind(mem.tsock);
+    // bus.isocks[0].bind(mem->tsock);
     bus.isocks[1].bind(clint.tsock);
     bus.isocks[2].bind(sys.tsock);
 
@@ -143,7 +129,8 @@ RiscvVpAdapter::RiscvVpAdapter(const RiscvVpAdapterBuilder& bld) :
     runner = std::make_unique<DirectCoreRunner>(core);
 }
 
-bool RiscvVpAdapter::Init() {
+bool RiscvVpAdapter::init() {
+    return true;
 }
 
 RiscvVpAdapter::~RiscvVpAdapter() {
