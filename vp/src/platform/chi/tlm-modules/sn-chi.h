@@ -549,7 +549,7 @@ private:
 			std::cout << std::left << std::setw(10) << ts << " ";
 			auto opcode = trans->GetOpCodeStr();
 			std::cout << "SN[" << std::setw(2) 
-				<< NODE_ID << "] -> HN[" 
+				<< std::dec << NODE_ID << "] -> HN[" 
 				<< std::setw(2) << ICN_ID << "]: " 
 				<< std::right << std::setfill('0') << std::setw(8) << std::hex 
 				<< trans->GetGP().get_address() << " "
